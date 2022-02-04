@@ -1,4 +1,4 @@
-module gocv.io/x/gocv
+module github.com/ottboy4/gocv
 
 go 1.13
 
