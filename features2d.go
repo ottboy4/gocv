@@ -385,6 +385,72 @@ func (o *ORB) DetectAndCompute(src Mat, mask Mat) ([]KeyPoint, Mat) {
 	return getKeyPoints(ret), desc
 }
 
+// StitcherMode for stitcher mode operations.
+//
+// For further details, please see:
+// https://docs.opencv.org/4.x/d2/d8d/classcv_1_1Stitcher.html#a114713924ec05a0309f4df7e918c0324
+//
+type StitcherMode int
+
+const (
+	// Mode for creating photo panoramas. Expects images under perspective transformation and projects resulting pano to sphere.
+	Panorama StitcherMode = 0
+
+	// Mode for composing scans. Expects images under affine transformation does not compensate exposure by default.
+	Scans StitcherMode = 1
+)
+
+// StitcherStatus for stitcher statuses.
+//
+// For further details, please see:
+// https://docs.opencv.org/4.x/d2/d8d/classcv_1_1Stitcher.html#a507409ce9435dd89857469d12ec06b45
+//
+type StitcherStatus int
+
+const (
+	Ok                        StitcherStatus = 0
+	ErrNeedMoreImgs           StitcherStatus = 1
+	ErrMomographyEstFail      StitcherStatus = 2
+	ErrCameraParamsAdjustFail StitcherStatus = 3
+)
+
+// Stitcher is a wrapper around the cv::Stitcher.
+type Stitcher struct {
+	// C.Stitcher
+	p unsafe.Pointer
+}
+
+// NewStitcher returns a new Stitcher algorithm
+//
+// For further details, please see:
+// https://docs.opencv.org/master/db/d95/classcv_1_1ORB.html
+//
+func NewStitcher(mode StitcherMode) Stitcher {
+	return Stitcher{p: unsafe.Pointer(C.Stitcher_Create(C.int(mode)))}
+}
+
+func (s *Stitcher) Stitch(images []Mat, pano *Mat) StitcherStatus {
+
+	cMatArray := make([]C.Mat, len(images))
+	for i, r := range images {
+		cMatArray[i] = r.p
+	}
+	cMats := C.struct_Mats{
+		mats:   (*C.Mat)(&cMatArray[0]),
+		length: C.int(len(images)),
+	}
+
+	ret := C.Stitcher_Stitch((C.Stitcher)(s.p), cMats, pano.p)
+	return StitcherStatus(ret)
+}
+
+// Close Stitcher.
+func (s *Stitcher) Close() error {
+	C.Stitcher_Close((C.Stitcher)(s.p))
+	s.p = nil
+	return nil
+}
+
 // SimpleBlobDetector is a wrapper around the cv::SimpleBlobDetector.
 type SimpleBlobDetector struct {
 	// C.SimpleBlobDetector

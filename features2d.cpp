@@ -282,6 +282,26 @@ struct KeyPoints ORB_DetectAndCompute(ORB o, Mat src, Mat mask, Mat desc) {
     return ret;
 }
 
+Stitcher Stitcher_Create(int mode) {
+    auto m = static_cast<cv::Stitcher::Mode>(mode); 
+    return new cv::Ptr<cv::Stitcher>(cv::Stitcher::create(m));
+}
+
+void Stitcher_Close(Stitcher s) {
+    delete s;
+}
+
+int Stitcher_Stitch(Stitcher s, struct Mats mats, Mat dst) {
+    std::vector<cv::Mat> images;
+
+    for (int i = 0; i < mats.length; ++i) {
+        images.push_back(*mats.mats[i]);
+    }
+
+    cv::Stitcher::Status status = (*s)->stitch(images, *dst);
+    return static_cast<int>(status);
+}
+
 cv::SimpleBlobDetector::Params ConvertCParamsToCPPParams(SimpleBlobDetectorParams params) {
     cv::SimpleBlobDetector::Params converted;
 
